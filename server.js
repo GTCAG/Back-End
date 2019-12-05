@@ -16,7 +16,7 @@ const {
   GraphQLList
 } = require("graphql");
 const server = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 /**
  * Connect to Mongoose using the DATABASE_URL environment variable.

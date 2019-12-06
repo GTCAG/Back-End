@@ -17,6 +17,10 @@ const userModel = new mongoose.Schema(
     lastName: {
       type: String,
       default: ""
+    },
+    groups: {
+      type: [mongoose.Types.ObjectId],
+      default: []
     }
   },
   { versionKey: false }

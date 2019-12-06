@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const expressGraphQL = require("express-graphql");
 
 const usersRouter = require("./routes/usersRouter");
+const groupsRouter = require("./routes/groupsRouter");
 
 //GraphQL Stuff
 const {
@@ -62,6 +63,7 @@ const schema = new GraphQLSchema({
 server.use(express.json());
 
 server.use("/users", usersRouter);
+server.use("/groups", groupsRouter);
 
 server.use(
   "/graphql",

@@ -122,7 +122,7 @@ router.put("/:id", verifyEventId, (req, res) => {
   req.event
     .update(req.body)
     .then(updatedEvent => {
-      res.status(200).json(updatedEvent);
+      res.status(200).json({ updatedRecords: updatedEvent.nModified });
     })
     .catch(err => {
       console.log("Error trying to update event", err);

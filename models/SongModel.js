@@ -6,8 +6,8 @@ const songSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    bpm: Number,
-    referenceUrls: [String],
+    bpm: { type: Number, default: 0 },
+    referenceUrls: { type: [String], default: [] },
     attachmentUrls: {
       type: [
         {

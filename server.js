@@ -8,6 +8,7 @@ const expressGraphQL = require("express-graphql");
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
 const groupsRouter = require("./routes/groupsRouter");
+const songsRouter = require("./routes/songsRouter");
 
 //GraphQL Stuff
 const {
@@ -66,6 +67,7 @@ server.use(express.json());
 server.use("/users", usersRouter);
 server.use("/groups", groupsRouter);
 server.use("/events", eventsRouter);
+server.use("/songs", songsRouter);
 
 server.use(
   "/graphql",

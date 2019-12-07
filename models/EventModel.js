@@ -19,6 +19,10 @@ const eventModel = new mongoose.Schema(
     songs: {
       type: [mongoose.Types.ObjectId],
       default: []
+    },
+    associatedGroup: {
+      type: mongoose.Types.ObjectId,
+      required: true
     }
   },
   { versionKey: false }

@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const expressGraphQL = require("express-graphql");
 
 const usersRouter = require("./routes/usersRouter");
+const eventsRouter = require("./routes/eventsRouter");
 const groupsRouter = require("./routes/groupsRouter");
 
 //GraphQL Stuff
@@ -64,6 +65,7 @@ server.use(express.json());
 
 server.use("/users", usersRouter);
 server.use("/groups", groupsRouter);
+server.use("/events", eventsRouter);
 
 server.use(
   "/graphql",

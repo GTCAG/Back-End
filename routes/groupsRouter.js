@@ -63,12 +63,10 @@ router.post("/", (req, res) => {
                     "Error updating user with group id when creating group",
                     err
                   );
-                  res
-                    .status(500)
-                    .json({
-                      error:
-                        "Error updating users groups with newly created group id"
-                    });
+                  res.status(500).json({
+                    error:
+                      "Error updating users groups with newly created group id"
+                  });
                 });
             })
             .catch(err => {
@@ -116,6 +114,18 @@ router.put("/:id", validateGroupId, (req, res) => {
 router.delete("/:id", validateGroupId, (req, res) => {
   Group.findByIdAndDelete(req.params.id)
     .then(group => {
+      for (const member of group.members) {
+        User.findById({ _id: member.userId })
+          .then(userMember => {
+            //Remove group id from user's groups array.
+            userMember.groups.splice(userMember.groups.indexOf(group._id), 1);
+            userMember.save();
+          })
+          .catch(err => {
+            console.log("Error finding member", err);
+          });
+      }
+
       res.status(200).json(group);
     })
     .catch(err => {

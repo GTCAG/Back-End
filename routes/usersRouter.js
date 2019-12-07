@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/UserModel");
+const bcrypt = require("bcrypt");
 
 /**
  * Shows all users
@@ -24,26 +25,83 @@ router.get("/:id", validateUserId, (req, res) => {
 });
 
 /**
+ * Logs the user in.
+ * Request body example:
+ *  {
+ *    "username": "john",
+ *    "password": "doe"
+ *  }
+ */
+router.post("/login", (req, res) => {
+  if (!req.body.username || !req.body.password) {
+    res
+      .status(400)
+      .json({ error: "username and password fields are required" });
+  } else {
+    //Retrieve hash stored in db.
+    User.find({ username: req.body.username })
+      .then(user => {
+        if (user.length > 0) {
+          //User exists, compare passwords.
+          const foundUser = user[0];
+          bcrypt
+            .compare(req.body.password, foundUser.password)
+            .then(result => {
+              if (result) {
+                res.status(200).json({ message: "Logged in! Sort of..." });
+              } else {
+                res.status(401).json({ error: "Incorrect password" });
+              }
+            })
+            .catch(err => {
+              console.log("Error trying to compare password", err);
+              res.status(500).json({
+                error: "There was an error trying to verify the password"
+              });
+            });
+        } else {
+          res.status(404).json({ error: "username does not exist" });
+        }
+      })
+      .catch(() => {
+        res
+          .status(500)
+          .json({ error: "Error trying to find user by username" });
+      });
+  }
+});
+
+/**
  * Creates a user,
  * body requires username, password, and firstName fields.
  * An optional lastName field and others could be added.
  */
-router.post("/", (req, res) => {
+router.post("/register", (req, res) => {
   const body = req.body;
   if (!body.username || !body.password || !body.firstName) {
     res.status(400).json({
       error: "username, password, and firstName fields are required in the body"
     });
   } else {
-    const user = new User({ ...body });
-    user
-      .save()
-      .then(user => {
-        res.status(201).json(user);
+    //Hash password
+    bcrypt
+      .hash(body.password, 10)
+      .then(hash => {
+        body.password = hash;
+        const user = new User({ ...body });
+        user
+          .save()
+          .then(user => {
+            res.status(201).json(user);
+          })
+          .catch(err => {
+            console.log("Error creating user: ", err);
+            res.status(500).json({ error: "Could not create user" });
+          });
       })
       .catch(err => {
-        console.log("Error creating user: ", err);
-        res.status(500).json({ error: "Could not create user" });
+        console.log("Error hashing password: ", err);
+        res.status(500).json({ error: "Could not hash password" });
       });
   }
 });

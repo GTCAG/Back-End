@@ -52,7 +52,24 @@ router.post("/", (req, res) => {
           newGroup
             .save()
             .then(createdGroup => {
-              res.status(201).json(createdGroup);
+              user.groups.push(createdGroup._id);
+              user
+                .save()
+                .then(updatedUser => {
+                  res.status(201).json({ createdGroup, updatedUser });
+                })
+                .catch(error => {
+                  console.log(
+                    "Error updating user with group id when creating group",
+                    err
+                  );
+                  res
+                    .status(500)
+                    .json({
+                      error:
+                        "Error updating users groups with newly created group id"
+                    });
+                });
             })
             .catch(err => {
               console.log("Error making new group", err);
@@ -72,6 +89,24 @@ router.post("/", (req, res) => {
         });
       });
   }
+});
+
+/**
+ * Edit group by id
+ */
+router.put("/:id", validateGroupId, (req, res) => {
+  Group.findByIdAndUpdate(
+    { _id: req.params.id },
+    { ...req.body },
+    { new: true, useFindAndModify: false }
+  )
+    .then(updatedGroup => {
+      res.status(200).json(updatedGroup);
+    })
+    .catch(err => {
+      console.log("Error trying to update group by id");
+      res.status(500).json({ error: "Could not update group." });
+    });
 });
 
 /**

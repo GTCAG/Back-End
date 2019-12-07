@@ -67,7 +67,6 @@ router.delete("/:id", validateUserId, (req, res) => {
  * Update user by id (_id from mongodb)
  */
 router.put("/:id", validateUserId, (req, res) => {
-  User.findByIdAndUpdate();
   User.findByIdAndUpdate(
     { _id: req.params.id },
     { ...req.body },
@@ -86,7 +85,7 @@ router.put("/:id", validateUserId, (req, res) => {
 
 //Middleware function to check if a user exists with specified id in req.params
 function validateUserId(req, res, next) {
-  User.findById(req.params.id, "username firstName lastName _id")
+  User.findById(req.params.id, "username firstName lastName _id groups")
     .then(user => {
       if (user) {
         req.user = user;

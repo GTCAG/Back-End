@@ -18,6 +18,13 @@ router.get("/", (req, res) => {
 });
 
 /**
+ * Get group by id
+ */
+router.get("/:id", validateGroupId, (req, res) => {
+  res.status(200).json(req.group);
+});
+
+/**
  * Creates a group.
  * The shape of the request body needs to be
  *   {
@@ -40,7 +47,7 @@ router.post("/", (req, res) => {
           const newGroup = new Group({
             name: body.groupName,
             admins: [body.creatorId],
-            members: [body.creatorId]
+            members: [{ role: "other", userId: body.creatorId }]
           });
           newGroup
             .save()

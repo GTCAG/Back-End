@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/UserModel");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 /**
  * Shows all users
@@ -46,7 +47,11 @@ router.post("/login", (req, res) => {
             .compare(req.body.password, foundUser.password)
             .then(result => {
               if (result) {
-                res.status(200).json({ message: "Logged in! Sort of..." });
+                const accessToken = jwt.sign(
+                  { email: foundUser.email },
+                  process.env.ACCESS_TOKEN_SECRET
+                );
+                res.status(200).json({ accessToken });
               } else {
                 res.status(401).json({ error: "Incorrect password" });
               }
@@ -90,11 +95,20 @@ router.post("/register", (req, res) => {
         user
           .save()
           .then(user => {
-            res.status(201).json(user);
+            res.status(201).json({
+              lastName: user.lastName,
+              _id: user._id,
+              email: user.email,
+              firstName: user.firstName
+            });
           })
           .catch(err => {
-            console.log("Error creating user: ", err);
-            res.status(500).json({ error: "Could not create user" });
+            if (err.code && err.code === 11000) {
+              res.status(400).json({ error: "email already in use" });
+            } else {
+              console.log("Error creating user: ", err);
+              res.status(500).json({ error: "Could not create user" });
+            }
           });
       })
       .catch(err => {

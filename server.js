@@ -3,22 +3,13 @@ if (!process.env.NODE_ENV || process.env.NODE_ENV != "production")
 
 const express = require("express");
 const mongoose = require("mongoose");
-const expressGraphQL = require("express-graphql");
 
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
 const groupsRouter = require("./routes/groupsRouter");
 const songsRouter = require("./routes/songsRouter");
+const authenticateToken = require("./routes/middleware/authenticateToken");
 
-//GraphQL Stuff
-const {
-  GraphQLSchema,
-  GraphQLObjectType,
-  GraphQLString,
-  GraphQLInt,
-  GraphQLNonNull,
-  GraphQLList
-} = require("graphql");
 const server = express();
 const port = process.env.PORT || 4000;
 
@@ -35,47 +26,12 @@ const db = mongoose.connection;
 db.on("error", err => console.error(err));
 db.once("open", () => console.log("Connected to Database"));
 
-const GroupType = new GraphQLObjectType({
-  name: "Group",
-  description: "This represents a group of members for events/planning",
-  fields: () => ({
-    id: { type: GraphQLNonNull(GraphQLInt) },
-    name: { type: GraphQLNonNull(GraphQLString) }
-  })
-});
-
-const RootQueryType = new GraphQLObjectType({
-  name: "Query",
-  description: "Root Query",
-  fields: () => ({
-    groups: {
-      type: new GraphQLList(GroupType),
-      description: "List of groups",
-      resolve: () => [
-        { name: "Group 1", id: 2 },
-        { name: "Group 2", id: 2 }
-      ]
-    }
-  })
-});
-const schema = new GraphQLSchema({
-  query: RootQueryType
-});
-
 server.use(express.json());
 
 server.use("/users", usersRouter);
-server.use("/groups", groupsRouter);
-server.use("/events", eventsRouter);
-server.use("/songs", songsRouter);
-
-server.use(
-  "/graphql",
-  expressGraphQL({
-    schema: schema,
-    graphiql: true
-  })
-);
+server.use("/groups", authenticateToken, groupsRouter);
+server.use("/events", authenticateToken, eventsRouter);
+server.use("/songs", authenticateToken, songsRouter);
 
 server.get("/", (req, res) => {
   res.status(200).json({ message: "Test" });

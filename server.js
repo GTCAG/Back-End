@@ -3,6 +3,7 @@ if (!process.env.NODE_ENV || process.env.NODE_ENV != "production")
 
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
@@ -27,7 +28,7 @@ db.on("error", err => console.error(err));
 db.once("open", () => console.log("Connected to Database"));
 
 server.use(express.json());
-
+server.use(cors());
 server.use("/users", usersRouter);
 server.use("/groups", authenticateToken, groupsRouter);
 server.use("/events", authenticateToken, eventsRouter);

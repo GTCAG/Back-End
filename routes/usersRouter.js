@@ -1,13 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/UserModel");
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+
+const authenticateToken = require("./middleware/authenticateToken");
 
 /**
  * Shows all users
  */
-router.get("/", (req, res) => {
+router.get("/", authenticateToken, (req, res) => {
   User.find({}, "email firstName lastName _id", (err, users) => {
     if (err) {
       console.log("Error retrieving users:", err);
@@ -21,7 +24,7 @@ router.get("/", (req, res) => {
 /**
  * Get user by id (_id from mongodb)
  */
-router.get("/:id", validateUserId, (req, res) => {
+router.get("/:id", [validateUserId, authenticateToken], (req, res) => {
   res.status(200).json(req.user);
 });
 
@@ -33,6 +36,14 @@ router.get("/:id", validateUserId, (req, res) => {
  *    "password": "doe"
  *  }
  */
+
+/**
+ * Get users groups.
+ */
+router.get("/:id/groups", [validateUserId, authenticateToken], (req, res) => {
+  res.status(200).json(req.user.groups);
+});
+
 router.post("/login", (req, res) => {
   if (!req.body.email || !req.body.password) {
     res.status(400).json({ error: "email and password fields are required" });
@@ -48,12 +59,12 @@ router.post("/login", (req, res) => {
             .then(result => {
               if (result) {
                 const accessToken = jwt.sign(
-                  { email: foundUser.email },
+                  { userId: foundUser._id, email: foundUser.email },
                   process.env.ACCESS_TOKEN_SECRET
                 );
                 res.status(200).json({ accessToken });
               } else {
-                res.status(401).json({ error: "Incorrect password" });
+                res.status(401).json({ error: "Incorrect Password" });
               }
             })
             .catch(err => {
@@ -63,9 +74,7 @@ router.post("/login", (req, res) => {
               });
             });
         } else {
-          res
-            .status(404)
-            .json({ error: "user with that email does not exist" });
+          res.status(404).json({ error: "Invalid Credentials" });
         }
       })
       .catch(() => {
@@ -121,7 +130,7 @@ router.post("/register", (req, res) => {
 /**
  * Delete a user by id (_id from mongodb)
  */
-router.delete("/:id", validateUserId, (req, res) => {
+router.delete("/:id", [validateUserId, authenticateToken], (req, res) => {
   const id = req.params.id;
   User.findByIdAndDelete(id)
     .then(user => {
@@ -136,7 +145,7 @@ router.delete("/:id", validateUserId, (req, res) => {
 /**
  * Update user by id (_id from mongodb)
  */
-router.put("/:id", validateUserId, (req, res) => {
+router.put("/:id", [validateUserId, authenticateToken], (req, res) => {
   User.findByIdAndUpdate(
     { _id: req.params.id },
     { ...req.body },

@@ -4,10 +4,10 @@ const User = require("../models/UserModel");
 const router = express.Router();
 
 /**
- * Retrieves all the groups
+ * Retrieves all the groups associated with the user.
  */
 router.get("/", (req, res) => {
-  Group.find()
+  Group.find({ "members.userId": req.authUser.userId })
     .then(groups => {
       res.status(200).json(groups);
     })
@@ -33,21 +33,20 @@ router.get("/:id", validateGroupId, (req, res) => {
  *   }
  */
 router.post("/", (req, res) => {
+  const creatorId = req.authUser.userId;
   const body = req.body;
-  if (!body.groupName || !body.creatorId) {
-    res
-      .status(400)
-      .json({ error: "groupName and creatorId fields are required." });
+  if (!body.groupName) {
+    res.status(400).json({ error: "groupName field is required." });
   } else {
     //Verify user ID exists.
-    User.findById({ _id: req.body.creatorId })
+    User.findById({ _id: creatorId })
       .then(user => {
         if (user) {
           //Verified user exists with that id, create new group now.
           const newGroup = new Group({
             name: body.groupName,
-            admins: [body.creatorId],
-            members: [{ role: "other", userId: body.creatorId }]
+            admins: [creatorId],
+            members: [{ role: "other", userId: creatorId }]
           });
           newGroup
             .save()

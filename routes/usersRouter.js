@@ -21,6 +21,24 @@ router.get("/", authenticateToken, (req, res) => {
   });
 });
 
+router.get("/whoami", authenticateToken, (req, res) => {
+  const { userId, email } = req.authUser;
+  User.findById(userId)
+    .then(user => {
+      console.log(user);
+      res.status(200).json({
+        userId,
+        email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      });
+    })
+    .catch(err => {
+      console.log("Server error: ", err);
+      res.status(500).json({ message: "There was an error with the server" });
+    });
+});
+
 /**
  * Get user by id (_id from mongodb)
  */
@@ -62,7 +80,15 @@ router.post("/login", (req, res) => {
                   { userId: foundUser._id, email: foundUser.email },
                   process.env.ACCESS_TOKEN_SECRET
                 );
-                res.status(200).json({ accessToken });
+                res
+                  .status(200)
+                  .json({
+                    accessToken,
+                    userId: foundUser._id,
+                    email: foundUser.email,
+                    firstName: foundUser.firstName,
+                    lastName: foundUser.lastName
+                  });
               } else {
                 res.status(401).json({ error: "Incorrect Password" });
               }

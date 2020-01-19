@@ -34,6 +34,8 @@ server.use("/groups", authenticateToken, groupsRouter);
 server.use("/events", authenticateToken, eventsRouter);
 server.use("/songs", authenticateToken, songsRouter);
 
+server.use("/charge", (req, res) => {});
+
 server.get("/", (req, res) => {
   res.status(200).json({ message: "Test" });
 });

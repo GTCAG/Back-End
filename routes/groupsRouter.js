@@ -2,6 +2,7 @@ const express = require("express");
 const Group = require("../models/GroupModel");
 const User = require("../models/UserModel");
 const router = express.Router();
+const codeGen = require("../codeGenerator");
 
 /**
  * Retrieves all the groups associated with the user.
@@ -42,6 +43,9 @@ router.post("/", (req, res) => {
     User.findById({ _id: creatorId })
       .then(user => {
         if (user) {
+          //create new group code
+          const code = codeGen(4);
+
           //Verified user exists with that id, create new group now.
           const newGroup = new Group({
             name: body.groupName,

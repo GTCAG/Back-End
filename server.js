@@ -4,6 +4,7 @@ if (!process.env.NODE_ENV || process.env.NODE_ENV != "production")
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
@@ -34,7 +35,22 @@ server.use("/groups", authenticateToken, groupsRouter);
 server.use("/events", authenticateToken, eventsRouter);
 server.use("/songs", authenticateToken, songsRouter);
 
-server.use("/charge", (req, res) => {});
+server.post("/charge", async (req, res) => {
+  console.log("Req body: ", req.body);
+  try {
+    let { status } = await stripe.charges.create({
+      amount: req.body.amount * 100, //Amount to send to stripe is in pennies.
+      currency: "usd",
+      description: "Church donation",
+      source: req.body.id
+    });
+
+    res.json({ status });
+  } catch (err) {
+    console.log(err);
+    res.status(500).end();
+  }
+});
 
 server.get("/", (req, res) => {
   res.status(200).json({ message: "Test" });

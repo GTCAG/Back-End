@@ -7,5 +7,3 @@ function makeCode(length) {
 
   return code;
 }
-
-console.log(makeCode(4));

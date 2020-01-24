@@ -44,11 +44,12 @@ router.post("/", (req, res) => {
       .then(user => {
         if (user) {
           //create new group code
-          const code = codeGen(4);
+          const code = createUniqueCode(4);
 
           //Verified user exists with that id, create new group now.
           const newGroup = new Group({
             name: body.groupName,
+            code,
             admins: [creatorId],
             members: [{ role: "other", userId: creatorId }]
           });
@@ -152,6 +153,26 @@ function validateGroupId(req, res, next) {
       console.log("Error trying to verify group by id", err);
       res.status(500).json({ error: "Could not verify group id" });
     });
+}
+
+function createUniqueCode(length) {
+  let isUnique = false;
+
+
+  do {
+    let code = codeGen(length);
+
+    Group.find({code: code})
+  .then(res => {
+    if(res.length === 0)
+      isUnique = true;
+  })
+  .catch(err => {
+    console.log("Error creating code: ", err);
+  })
+  } while(!isUnique);
+  
+  return code;
 }
 
 module.exports = router;

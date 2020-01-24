@@ -7,3 +7,5 @@ function makeCode(length) {
 
   return code;
 }
+
+module.exports = makeCode;

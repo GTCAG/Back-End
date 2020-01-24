@@ -18,6 +18,42 @@ router.get("/", (req, res) => {
     });
 });
 
+router.post("/join", (req, res) => {
+  const userId = req.authUser.userId;
+  const code = req.body.code;
+
+  Group.find({code})
+  .then(([group]) => {
+    if(group) {
+      return group;
+    }else {
+      res.status(404).json({message: "Group with join code not found"});
+    }
+  })
+  .then(group => {
+      group.members.push({userId, role: "member"});
+      return group.save();
+  })
+  .then(updGroup => {
+    User.findById({ _id: userId})
+    .then(user => {
+      user.groups.push(updGroup._id)
+      return user.save();
+    })
+    .catch(err => {
+      console.log("Error: ", err);
+      res.status(500).json({message: "There was a server error"});
+    })
+  })
+  .then(user => {
+    res.status(200).json({message: "Successfully joined group"});
+  })
+  .catch(err => {
+    console.log("Error: ", err);
+    res.status(500).json({message: "Server error"});
+  })
+});
+
 /**
  * Get group by id
  */
@@ -33,7 +69,7 @@ router.get("/:id", validateGroupId, (req, res) => {
  *      creatorId: (user_id)
  *   }
  */
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const creatorId = req.authUser.userId;
   const body = req.body;
   if (!body.groupName) {
@@ -44,14 +80,14 @@ router.post("/", (req, res) => {
       .then(user => {
         if (user) {
           //create new group code
-          const code = createUniqueCode(4);
+          const code = codeGen(4);
 
           //Verified user exists with that id, create new group now.
           const newGroup = new Group({
             name: body.groupName,
             code,
             admins: [creatorId],
-            members: [{ role: "other", userId: creatorId }]
+            members: [{ role: "admin", userId: creatorId }]
           });
           newGroup
             .save()
@@ -155,24 +191,5 @@ function validateGroupId(req, res, next) {
     });
 }
 
-function createUniqueCode(length) {
-  let isUnique = false;
-
-
-  do {
-    let code = codeGen(length);
-
-    Group.find({code: code})
-  .then(res => {
-    if(res.length === 0)
-      isUnique = true;
-  })
-  .catch(err => {
-    console.log("Error creating code: ", err);
-  })
-  } while(!isUnique);
-  
-  return code;
-}
 
 module.exports = router;

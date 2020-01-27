@@ -16,19 +16,24 @@ const groupSchema = new mongoose.Schema(
       type: [
         {
           role: String,
-          userId: mongoose.Types.ObjectId
+          user: {
+            type: mongoose.Types.ObjectId,
+            ref: "User"
+          },
+          versionKey: false
         }
       ],
       required: true,
+      versionKey: false,
       default: []
     },
     admins: {
-      type: [mongoose.Types.ObjectId],
+      type: [{ type: mongoose.Types.ObjectId, ref: "User" }],
       required: true,
       default: []
     },
     events: {
-      type: [mongoose.Types.ObjectId],
+      type: [{ type: mongoose.Types.ObjectId, ref: "Event" }],
       default: [],
       required: true
     }

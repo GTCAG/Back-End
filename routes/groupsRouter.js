@@ -8,7 +8,7 @@ const codeGen = require("../codeGenerator");
  * Retrieves all the groups associated with the user.
  */
 router.get("/", (req, res) => {
-  Group.find({ "members.userId": req.authUser.userId })
+  Group.find({ "members.user": req.authUser.userId })
     .then(groups => {
       res.status(200).json(groups);
     })
@@ -22,36 +22,39 @@ router.post("/join", (req, res) => {
   const userId = req.authUser.userId;
   const code = req.body.code;
 
-  Group.find({code})
-  .then(([group]) => {
-    if(group) {
-      return group;
-    }else {
-      res.status(404).json({message: "Group with join code not found"});
-    }
-  })
-  .then(group => {
-      group.members.push({userId, role: "member"});
+  Group.find({ code })
+    .then(([group]) => {
+      if (group) {
+        return group;
+      } else {
+        res.status(404).json({ message: "Group with join code not found" });
+      }
+    })
+    .then(group => {
+      group.members.push({
+        user: userId,
+        role: "member"
+      });
       return group.save();
-  })
-  .then(updGroup => {
-    User.findById({ _id: userId})
+    })
+    .then(updGroup => {
+      User.findById({ _id: userId })
+        .then(user => {
+          user.groups.push(updGroup._id);
+          return user.save();
+        })
+        .catch(err => {
+          console.log("Error: ", err);
+          res.status(500).json({ message: "There was a server error" });
+        });
+    })
     .then(user => {
-      user.groups.push(updGroup._id)
-      return user.save();
+      res.status(200).json({ message: "Successfully joined group" });
     })
     .catch(err => {
       console.log("Error: ", err);
-      res.status(500).json({message: "There was a server error"});
-    })
-  })
-  .then(user => {
-    res.status(200).json({message: "Successfully joined group"});
-  })
-  .catch(err => {
-    console.log("Error: ", err);
-    res.status(500).json({message: "Server error"});
-  })
+      res.status(500).json({ message: "Server error" });
+    });
 });
 
 /**
@@ -87,7 +90,7 @@ router.post("/", async (req, res) => {
             name: body.groupName,
             code,
             admins: [creatorId],
-            members: [{ role: "admin", userId: creatorId }]
+            members: [{ role: "admin", user: creatorId }]
           });
           newGroup
             .save()
@@ -155,7 +158,7 @@ router.delete("/:id", validateGroupId, (req, res) => {
   Group.findByIdAndDelete(req.params.id)
     .then(group => {
       for (const member of group.members) {
-        User.findById({ _id: member.userId })
+        User.findById({ _id: member.user })
           .then(userMember => {
             //Remove group id from user's groups array.
             userMember.groups.splice(userMember.groups.indexOf(group._id), 1);
@@ -177,6 +180,8 @@ router.delete("/:id", validateGroupId, (req, res) => {
 function validateGroupId(req, res, next) {
   const groupId = req.params.id;
   Group.findById({ _id: groupId })
+    .populate("members.user", "lastName firstName")
+    .populate("admins", "lastName firstName")
     .then(group => {
       if (group) {
         req.group = group;
@@ -190,6 +195,5 @@ function validateGroupId(req, res, next) {
       res.status(500).json({ error: "Could not verify group id" });
     });
 }
-
 
 module.exports = router;

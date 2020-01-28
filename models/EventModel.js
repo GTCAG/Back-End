@@ -17,7 +17,7 @@ const eventModel = new mongoose.Schema(
       default: []
     },
     songs: {
-      type: [mongoose.Types.ObjectId],
+      type: [{ type: mongoose.Types.ObjectId, ref: "Song" }],
       default: []
     },
     associatedGroup: {

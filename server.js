@@ -5,6 +5,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
+const axios = require("axios");
 
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
@@ -14,6 +15,10 @@ const authenticateToken = require("./routes/middleware/authenticateToken");
 
 const server = express();
 const port = process.env.PORT || 4000;
+
+const channelId = "UCNaKPci4jHkzFyo2hYwlVRQ";
+// const channelId = "UC7tdoGx0eQfRJm9Qj6GCs0A"; //Test for live truth, using nourish channel id. (Always live)
+const livestreamURI = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&type=video&eventType=live&key=${process.env.YOUTUBE_API_KEY}`;
 
 /**
  * Connect to Mongoose using the DATABASE_URL environment variable.
@@ -34,6 +39,22 @@ server.use("/users", usersRouter);
 server.use("/groups", authenticateToken, groupsRouter);
 server.use("/events", authenticateToken, eventsRouter);
 server.use("/songs", authenticateToken, songsRouter);
+
+server.get("/livestream", (req, res) => {
+  axios
+    .get(livestreamURI)
+    .then(response => {
+      const items = response.data.items;
+      if (items && items.length > 0) res.status(200).json({ live: true });
+      else res.status(200).json({ live: false });
+    })
+    .catch(err => {
+      console.log("Error checking livestream: ", err);
+      res
+        .status(500)
+        .json({ message: "There was an error checking livestream" });
+    });
+});
 
 server.post("/charge", async (req, res) => {
   console.log("Req body: ", req.body);

@@ -17,6 +17,20 @@ router.get("/", (req, res) => {
     });
 });
 
+router.get("/group/:groupId", (req, res) => {
+  Event.find(
+    { associatedGroup: req.params.groupId },
+    "_id songs date roles name"
+  )
+    .then(events => {
+      res.status(200).json(events);
+    })
+    .catch(err => {
+      console.log("Err: ", err);
+      res.status(500).json({ message: "Server err trying to get events" });
+    });
+});
+
 /**
  * Get event by id
  */
@@ -31,8 +45,8 @@ router.get("/:id", verifyEventId, (req, res) => {
 router.post("/", verifyGroupId, (req, res) => {
   const body = req.body;
   //verify body has an eventDate field
-  if (!body.eventDate) {
-    res.status(400).json({ error: "eventDate field is required" });
+  if (!body.eventDate || !body.name) {
+    res.status(400).json({ error: "eventDate and name fields are required" });
   } else {
     //Body is good to go, make new event now and try to save to db.
 
@@ -40,6 +54,7 @@ router.post("/", verifyGroupId, (req, res) => {
 
     const newEvent = new Event({
       date: body.eventDate,
+      name: body.name,
       songs: [],
       associatedGroup: group._id
     });

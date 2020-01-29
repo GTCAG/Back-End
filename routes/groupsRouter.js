@@ -182,6 +182,7 @@ function validateGroupId(req, res, next) {
   Group.findById({ _id: groupId })
     .populate("members.user", "lastName firstName")
     .populate("admins", "lastName firstName")
+    .populate("events", "name date songs")
     .then(group => {
       if (group) {
         req.group = group;

@@ -25,6 +25,7 @@ router.delete("/:id/song", verifyEventId, (req, res) => {
     event.songs = filtered;
     event
       .save()
+      .populate("songs", "title _id")
       .then(response => {
         res
           .status(200)

@@ -50,6 +50,7 @@ router.post("/:id/song", verifyEventId, (req, res) => {
       event.songs.push(songId);
       event
         .save()
+        .populate("songs", "title _id")
         .then(response => {
           res
             .status(201)
@@ -200,6 +201,7 @@ router.put("/:id", verifyEventId, (req, res) => {
 function verifyEventId(req, res, next) {
   const id = req.params.id;
   Event.findById({ _id: id })
+    .populate("songs", "_id title")
     .then(event => {
       if (event) {
         req.event = event;

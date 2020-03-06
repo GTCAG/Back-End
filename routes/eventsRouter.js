@@ -21,15 +21,14 @@ router.delete("/:id/song", verifyEventId, (req, res) => {
   const { songId } = req.body;
   const event = req.event;
   if (songId) {
-    const filtered = event.songs.filter(song => song != songId);
+    const filtered = event.songs.filter(song => song._id != songId);
     event.songs = filtered;
     event
       .save()
-      .populate("songs", "title _id")
-      .then(response => {
+      .then(newEvent => {
         res
           .status(200)
-          .json({ message: "Removed song", songs: response.songs });
+          .json({ message: "Removed song", songs: newEvent.songs });
       })
       .catch(err => {
         res.status(500).json({ error: "Could not remove song" });
@@ -49,13 +48,24 @@ router.post("/:id/song", verifyEventId, (req, res) => {
     const duplicate = event.songs.some(song => song == songId);
     if (!duplicate) {
       event.songs.push(songId);
+
       event
         .save()
-        .populate("songs", "title _id")
-        .then(response => {
-          res
-            .status(201)
-            .json({ message: "Added song", songs: response.songs });
+        .then(newEvent => {
+          Event.populate(
+            newEvent,
+            { path: "songs", select: "title _id" },
+            err => {
+              if (err) {
+                res.status(500).json({ error: "Error populating songs" });
+                console.log("Error: ", err);
+              } else {
+                res
+                  .status(200)
+                  .json({ message: "Added song", songs: newEvent.songs });
+              }
+            }
+          );
         })
         .catch(err => {
           console.log("Error: ", err);

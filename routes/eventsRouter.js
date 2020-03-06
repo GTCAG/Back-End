@@ -17,6 +17,58 @@ router.get("/", (req, res) => {
     });
 });
 
+router.delete("/:id/song", verifyEventId, (req, res) => {
+  const { songId } = req.body;
+  const event = req.event;
+  if (songId) {
+    const filtered = event.songs.filter(song => song != songId);
+    event.songs = filtered;
+    event
+      .save()
+      .then(response => {
+        res
+          .status(200)
+          .json({ message: "Removed song", songs: response.songs });
+      })
+      .catch(err => {
+        res.status(500).json({ error: "Could not remove song" });
+        console.log("error: ", err);
+      });
+  } else {
+    res.status(400).json({ error: "songId is required" });
+  }
+});
+
+//Example songId: 5e61b38fbeaec40017d1023c
+//Adds songId to list
+router.post("/:id/song", verifyEventId, (req, res) => {
+  const { songId } = req.body;
+  const event = req.event;
+  if (songId) {
+    const duplicate = event.songs.some(song => song == songId);
+    if (!duplicate) {
+      event.songs.push(songId);
+      event
+        .save()
+        .then(response => {
+          res
+            .status(201)
+            .json({ message: "Added song", songs: response.songs });
+        })
+        .catch(err => {
+          console.log("Error: ", err);
+          res
+            .status(500)
+            .json({ error: "Error updating event with song", err });
+        });
+    } else {
+      res.status(200).json({ error: "Song is already in the event" });
+    }
+  } else {
+    res.status(400).json({ error: "SongId is required" });
+  }
+});
+
 router.get("/group/:groupId", (req, res) => {
   Event.find(
     { associatedGroup: req.params.groupId },

@@ -25,7 +25,6 @@ router.get("/whoami", authenticateToken, (req, res) => {
   const { userId, email } = req.authUser;
   User.findById(userId)
     .then(user => {
-      console.log(user);
       res.status(200).json({
         userId,
         email,
@@ -80,15 +79,13 @@ router.post("/login", (req, res) => {
                   { userId: foundUser._id, email: foundUser.email },
                   process.env.ACCESS_TOKEN_SECRET
                 );
-                res
-                  .status(200)
-                  .json({
-                    accessToken,
-                    userId: foundUser._id,
-                    email: foundUser.email,
-                    firstName: foundUser.firstName,
-                    lastName: foundUser.lastName
-                  });
+                res.status(200).json({
+                  accessToken,
+                  userId: foundUser._id,
+                  email: foundUser.email,
+                  firstName: foundUser.firstName,
+                  lastName: foundUser.lastName
+                });
               } else {
                 res.status(401).json({ error: "Incorrect Password" });
               }

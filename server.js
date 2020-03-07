@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
 const axios = require("axios");
+const nodemailer = require("nodemailer");
 
 const usersRouter = require("./routes/usersRouter");
 const eventsRouter = require("./routes/eventsRouter");
@@ -70,6 +71,55 @@ server.post("/charge", async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500).end();
+  }
+});
+
+server.post("/contact", (req, res) => {
+  const { email, name, message } = req.body;
+
+  if (email && name && message) {
+    const output = `
+    <p>New Message from the church website contact page</p>
+
+    <h3>Contact Details</h3>
+    <ul>
+        <li>Name: ${name}</li>
+        <li>Email: ${email}</li>
+    </ul>
+
+    <h3>Message</h3>
+    <p>${message}</p>
+  `;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.CONTACT_EMAIL,
+        pass: process.env.CONTACT_PASSWORD
+      }
+    });
+
+    const mailOptions = {
+      from: email, //sender address
+      to: process.env.CONTACT_EMAIL, //list of receivers
+      subject: "New Message - Website Contact Page",
+      text: "",
+      html: output //html body
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending mail: ", error);
+        res.status(500).json({ error: "There was an error sending the email" });
+      } else {
+        console.log("Message Sent! Message Info: ", info);
+        res.status(200).json({ message: "Email sent successfully!" });
+      }
+    });
+  } else {
+    res
+      .status(400)
+      .json({ error: "email name and message fields are all required" });
   }
 });
 

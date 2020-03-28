@@ -68,6 +68,32 @@ router.put("/:id", verifySongId, (req, res) => {
     });
 });
 
+router.put("/:id/addurl", verifySongId, async (req, res) => {
+  const { url } = req.body;
+  if (url) {
+    req.song.referenceUrls.push(url);
+    await req.song.save();
+    res.status(200).json({ message: "Added url" });
+  } else {
+    res
+      .status(401)
+      .json({ message: "URL is a required field, yet it is empty" });
+  }
+});
+
+router.delete("/:id/removeurl", verifySongId, async (req, res) => {
+  const { url } = req.body;
+  if (url) {
+    const filteredArr = req.song.referenceUrls.filter(refUrl => refUrl != url);
+    req.song.referenceUrls = filteredArr;
+    await req.song.save();
+    res.status(200).json({ message: "Removed url (if it was in the array)" });
+  } else {
+    res
+      .status(401)
+      .json({ message: "URL is a required field, yet it is empty" });
+  }
+});
 /**
  * Delete song by id
  */

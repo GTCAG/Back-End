@@ -158,6 +158,39 @@ router.post("/:id/get-attachment-signature", verifySongId, async (req, res) => {
   return res.status(200).json({ signedURL });
 });
 
+router.get("/:id/attachment-list", verifySongId, async (req, res) => {
+  const params = {
+    Bucket: BUCKET_NAME,
+    Prefix: `${req.song._id}/`,
+  };
+
+  try {
+    const data = await new Promise((resolve, reject) => {
+      client.listObjectsV2(params, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    });
+
+    const fileNames = [];
+    for (fileData of data.Contents) {
+      // Remove the abnormal song id folder string from the file name
+      // By removing the initial Prefix
+      const fileName = fileData.Key.replace(data.Prefix, "");
+      fileNames.push(fileName);
+    }
+    res.status(200).json({ attachments: fileNames });
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .json({ message: "There was an error listing the objects from aws" });
+  }
+});
+
 function verifySongId(req, res, next) {
   const id = req.params.id;
   Song.findById({ _id: id })

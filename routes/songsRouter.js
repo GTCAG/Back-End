@@ -1,17 +1,37 @@
 const express = require("express");
-
+const AWS = require("aws-sdk");
 const Song = require("../models/SongModel");
 const router = express.Router();
+
+const allowedFileTypes = ["application/pdf", "text/plain", "audio/mpeg"];
+
+const BUCKET_NAME = process.env.AWS_BUCKET;
+
+AWS.config.update({
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_KEY,
+  region: "us-west-1",
+  signatureVersion: "v4",
+});
+
+const options = {
+  signatureVersion: "v4",
+  region: "us-west-1",
+  endpoint: new AWS.Endpoint(`http://s3-us-west-1.amazonaws.com`),
+  useAccelerateEndpoint: false,
+};
+
+const client = new AWS.S3(options);
 
 /**
  * Get all songs
  */
 router.get("/", (req, res) => {
   Song.find()
-    .then(songs => {
+    .then((songs) => {
       res.status(200).json(songs);
     })
-    .catch(err => {
+    .catch((err) => {
       console.log("Error retrieving songs: ", err);
       res.status(500).json({ error: "Could not retrieve songs" });
     });
@@ -43,10 +63,10 @@ router.post("/", (req, res) => {
     const newSong = new Song(body);
     newSong
       .save()
-      .then(createdSong => {
+      .then((createdSong) => {
         res.status(201).json(createdSong);
       })
-      .catch(err => {
+      .catch((err) => {
         console.log("Error saving song:", err);
         res.status(500).json({ error: "Could not save song" });
       });
@@ -59,10 +79,10 @@ router.post("/", (req, res) => {
 router.put("/:id", verifySongId, (req, res) => {
   req.song
     .update(req.body)
-    .then(updatedSong => {
+    .then((updatedSong) => {
       res.status(200).json({ updatedRecords: updatedSong.nModified });
     })
-    .catch(err => {
+    .catch((err) => {
       console.log("Error trying to update song:", err);
       res.status(500).json({ error: "Could not update song" });
     });
@@ -84,7 +104,9 @@ router.put("/:id/addurl", verifySongId, async (req, res) => {
 router.delete("/:id/removeurl", verifySongId, async (req, res) => {
   const { url } = req.body;
   if (url) {
-    const filteredArr = req.song.referenceUrls.filter(refUrl => refUrl != url);
+    const filteredArr = req.song.referenceUrls.filter(
+      (refUrl) => refUrl != url
+    );
     req.song.referenceUrls = filteredArr;
     await req.song.save();
     res.status(200).json({ message: "Removed url (if it was in the array)" });
@@ -100,19 +122,46 @@ router.delete("/:id/removeurl", verifySongId, async (req, res) => {
 router.delete("/:id", verifySongId, (req, res) => {
   req.song
     .remove()
-    .then(removedSong => {
+    .then((removedSong) => {
       res.status(200).json({ removedSong });
     })
-    .catch(err => {
+    .catch((err) => {
       console.log("Error removing song", err);
       res.status(500).json({ error: "Could not remove song" });
     });
 });
 
+router.post("/:id/get-attachment-signature", verifySongId, async (req, res) => {
+  const { fileName, fileType } = req.body;
+  if (!fileName || !fileType) {
+    res
+      .status(401)
+      .json({ message: "fileName and fileType field is required" });
+    return;
+  }
+
+  if (!allowedFileTypes.includes(fileType)) {
+    res.status(401).json({ message: "That file type is not supported" });
+    return;
+  }
+  const songKey = encodeURIComponent(req.song._id) + "/";
+  const fileKey = songKey + fileName;
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: fileKey,
+    ContentType: fileType,
+    Expires: 120 * 60, // 30 minutes
+  };
+
+  const signedURL = await client.getSignedUrlPromise("putObject", params);
+
+  return res.status(200).json({ signedURL });
+});
+
 function verifySongId(req, res, next) {
   const id = req.params.id;
   Song.findById({ _id: id })
-    .then(song => {
+    .then((song) => {
       if (song) {
         req.song = song;
         next();
@@ -120,7 +169,7 @@ function verifySongId(req, res, next) {
         res.status(404).json({ error: "Could not find song with that id" });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       console.log("Error trying to verify song by id", err);
       res.status(500).json({ error: "Could not verify song by id" });
     });

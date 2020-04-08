@@ -7,9 +7,10 @@
     "devStart": "nodemon server.js",
     "start": "node server.js"
   },
-  "author": "",
+  "author": "Mark Artishuk -- Github: artish1",
   "license": "ISC",
   "dependencies": {
+    "aws-sdk": "^2.655.0",
     "axios": "^0.19.2",
     "bcrypt": "^3.0.7",
     "cors": "^2.8.5",

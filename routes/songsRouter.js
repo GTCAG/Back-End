@@ -131,32 +131,36 @@ router.delete("/:id", verifySongId, (req, res) => {
     });
 });
 
-router.post("/:id/get-attachment-signature", verifySongId, async (req, res) => {
-  const { fileName, fileType } = req.body;
-  if (!fileName || !fileType) {
-    res
-      .status(401)
-      .json({ message: "fileName and fileType field is required" });
-    return;
+router.post(
+  "/:id/attachment-upload-signature",
+  verifySongId,
+  async (req, res) => {
+    const { fileName, fileType } = req.body;
+    if (!fileName || !fileType) {
+      res
+        .status(401)
+        .json({ message: "fileName and fileType field is required" });
+      return;
+    }
+
+    if (!allowedFileTypes.includes(fileType)) {
+      res.status(401).json({ message: "That file type is not supported" });
+      return;
+    }
+    const songKey = encodeURIComponent(req.song._id) + "/";
+    const fileKey = songKey + fileName;
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: fileKey,
+      ContentType: fileType,
+      Expires: 30 * 60, // 30 minutes
+    };
+
+    const signedURL = await client.getSignedUrlPromise("putObject", params);
+
+    return res.status(200).json({ signedURL });
   }
-
-  if (!allowedFileTypes.includes(fileType)) {
-    res.status(401).json({ message: "That file type is not supported" });
-    return;
-  }
-  const songKey = encodeURIComponent(req.song._id) + "/";
-  const fileKey = songKey + fileName;
-  const params = {
-    Bucket: BUCKET_NAME,
-    Key: fileKey,
-    ContentType: fileType,
-    Expires: 120 * 60, // 30 minutes
-  };
-
-  const signedURL = await client.getSignedUrlPromise("putObject", params);
-
-  return res.status(200).json({ signedURL });
-});
+);
 
 router.get("/:id/attachment-list", verifySongId, async (req, res) => {
   const params = {
@@ -188,6 +192,32 @@ router.get("/:id/attachment-list", verifySongId, async (req, res) => {
     res
       .status(500)
       .json({ message: "There was an error listing the objects from aws" });
+  }
+});
+
+router.get("/:id/attachment-signature", verifySongId, async (req, res) => {
+  const { fileName } = req.body;
+
+  if (!fileName) {
+    res.status(401).json({ message: "fileName is a required field" });
+    return;
+  }
+
+  const fileKey = `${req.song._id}/${fileName}`;
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: fileKey,
+    Expires: 30 * 60, // 30 minutes
+  };
+
+  try {
+    const signedURL = await client.getSignedUrlPromise("getObject", params);
+    res.status(200).json({ signedURL });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "There was an error trying to get the signed url" });
+    console.error("Error: ", err);
   }
 });
 

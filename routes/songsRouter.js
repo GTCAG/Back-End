@@ -131,6 +131,7 @@ router.delete("/:id", verifySongId, (req, res) => {
     });
 });
 
+// Get the signed link to upload an attachment for the specified song
 router.post(
   "/:id/attachment-upload-signature",
   verifySongId,
@@ -162,6 +163,7 @@ router.post(
   }
 );
 
+// Get the list of attachments for the song
 router.get("/:id/attachment-list", verifySongId, async (req, res) => {
   const params = {
     Bucket: BUCKET_NAME,
@@ -195,6 +197,7 @@ router.get("/:id/attachment-list", verifySongId, async (req, res) => {
   }
 });
 
+// Get the signed link to access/download file/attachment.
 router.get("/:id/attachment-signature", verifySongId, async (req, res) => {
   const { fileName } = req.body;
 
@@ -219,6 +222,32 @@ router.get("/:id/attachment-signature", verifySongId, async (req, res) => {
       .json({ message: "There was an error trying to get the signed url" });
     console.error("Error: ", err);
   }
+});
+
+// Delete the attachment from the song
+router.delete("/:id/remove-attachment", verifySongId, async (req, res) => {
+  const { fileName } = req.body;
+
+  if (!fileName) {
+    res.status(401).json({ message: "fileName field is required" });
+    return;
+  }
+
+  const fileKey = `${req.song._id}/${fileName}`;
+  const params = {
+    Bucket: BUCKET_NAME,
+    Key: fileKey,
+  };
+  await client.deleteObject(params, (err, data) => {
+    if (err) {
+      console.error("Error: ", err.message);
+      return res
+        .status(500)
+        .json({ message: "There was an error trying to delete the object: " });
+    } else {
+      res.status(200).json({ message: "Successfully deleted file" });
+    }
+  });
 });
 
 function verifySongId(req, res, next) {

@@ -199,10 +199,10 @@ router.get("/:id/attachment-list", verifySongId, async (req, res) => {
 
 // Get the signed link to access/download file/attachment.
 router.get("/:id/attachment-signature", verifySongId, async (req, res) => {
-  const { fileName } = req.body;
+  const { fileName } = req.params.fileName;
 
   if (!fileName) {
-    res.status(401).json({ message: "fileName is a required field" });
+    res.status(401).json({ message: "fileName is a required param" });
     return;
   }
 

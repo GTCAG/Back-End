@@ -3,7 +3,12 @@ const AWS = require("aws-sdk");
 const Song = require("../models/SongModel");
 const router = express.Router();
 
-const allowedFileTypes = ["application/pdf", "text/plain", "audio/mpeg"];
+const allowedFileTypes = [
+  "application/pdf",
+  "text/plain",
+  "audio/mpeg",
+  "application/zip",
+];
 
 const BUCKET_NAME = process.env.AWS_BUCKET;
 
@@ -199,7 +204,7 @@ router.get("/:id/attachment-list", verifySongId, async (req, res) => {
 
 // Get the signed link to access/download file/attachment.
 router.get("/:id/attachment-signature", verifySongId, async (req, res) => {
-  const { fileName } = req.params.fileName;
+  const { fileName } = req.query;
 
   if (!fileName) {
     res.status(401).json({ message: "fileName is a required param" });

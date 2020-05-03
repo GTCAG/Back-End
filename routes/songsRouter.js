@@ -3,13 +3,6 @@ const AWS = require("aws-sdk");
 const Song = require("../models/SongModel");
 const router = express.Router();
 
-const allowedFileTypes = [
-  "application/pdf",
-  "text/plain",
-  "audio/mpeg",
-  "application/zip",
-];
-
 const BUCKET_NAME = process.env.AWS_BUCKET;
 
 AWS.config.update({
@@ -149,10 +142,6 @@ router.post(
       return;
     }
 
-    if (!allowedFileTypes.includes(fileType)) {
-      res.status(401).json({ message: "That file type is not supported" });
-      return;
-    }
     const songKey = encodeURIComponent(req.song._id) + "/";
     const fileKey = songKey + fileName;
     const params = {

@@ -162,7 +162,7 @@ router.post(
       Expires: 30 * 60, // 30 minutes
     };
 
-    const signedURL = await client.getSignedUrlPromise(params);
+    const signedURL = await client.getSignedUrlPromise("putObject", params);
 
     return res.status(200).json({ signedURL });
   }
